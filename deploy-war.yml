@@ -1,0 +1,41 @@
+---
+- name: Deploy WAR file to AWS EC2 instances
+  hosts: appservers   # group from your inventory (EC2s)
+  become: yes
+  vars:
+    war_file: target/ROOT.war   # path on control node
+    tomcat_webapps: /opt/tomcat/webapps                                # adjust for your Tomcat setup
+    tomcat_service: tomcat                                             # service name (check with systemctl)
+
+  tasks:
+    - name: Ensure Tomcat is installed
+      package:
+        name: tomcat
+        state: present
+
+    - name: Stop Tomcat before deployment
+      service:
+        name: "{{ tomcat_service }}"
+        state: stopped
+
+    - name: Copy WAR file to Tomcat webapps directory
+      copy:
+        src: "{{ war_file }}"
+        dest: "{{ tomcat_webapps }}/ROOT.war"
+        owner: tomcat
+        group: tomcat
+        mode: '0644'
+
+    - name: Start Tomcat after deployment
+      service:
+        name: "{{ tomcat_service }}"
+        state: started
+
+    - name: Wait for app to become available
+      uri:
+        url: "http://{{ inventory_hostname }}:8080/ROOT/"
+        status_code: 200
+      register: app_status
+      retries: 10
+      delay: 5
+      until: app_status.status == 200

@@ -70,6 +70,12 @@ pipeline {
             }
         }
 
+        stage("Deploy the tomcat app!"){
+            steps {
+                sh "ansible-playbook deploy-war.yml -i inventory.ini"
+            }
+        }
+
 
 
         // stage ("Build App Image") {
