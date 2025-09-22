@@ -1,13 +1,112 @@
 pipeline {
     agent any
 
+    environment {
+        REGISTRY = "docker.io"
+        IMAGE_NAME = "vsiraparapu/war-app"
+        SONAR_HOST_URL = "http://sonarqube.local"
+    }
+
     stages {
 
-        stage("Build App") {
+        stage("Build Code") {
             steps {
-
                 sh "mvn clean install"
             }
         }
+
+
+         stage("Run Unit Tests") {
+            steps {
+                sh "mvn test"
+            }
+        }
+
+
+        stage("Run Code Scanning") {
+            steps {
+                script {
+                    // resolve the Sonar Scanner installation path
+                    def scannerHome = tool name: 'sonar-scanner-7.2.0', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+
+                    withSonarQubeEnv('sonar-local') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=war-app \
+                            -Dsonar.projectName=war-app \
+                            -Dsonar.sources=src \
+                            -Dsonar.java.binaries=target/classes
+                        """
+                    }
+                }
+            }
+        }
+
+        stage ("Check Quality Gate") {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage("Upload Artifacts") {
+            steps {
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: 'nexus:8081',
+                    groupId: 'com.business',
+                    version: '0.0.1-SNAPSHOT',   // must match POM
+                    repository: 'maven-snapshots',  // snapshot repo
+                    credentialsId: 'nexus-jenkins-creds',
+                    artifacts: [
+                        [artifactId: 'WarProject',    // must match POM
+                        classifier: '',
+                        file: 'target/ROOT.war',  // <-- WAR instead of JAR
+                        type: 'war']  // <-- WAR type
+                    ]
+                )
+            }
+        }
+
+
+
+        // stage ("Build App Image") {
+        //     steps {
+        //         script {
+                
+        //             // Build Docker image
+        //             sh "docker build -t ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER} ."
+        //         }
+        //     }
+        // }
+        
+
+        // stage ("Push App Image") {
+        //     steps {
+              
+        //         withCredentials([usernamePassword(credentialsId: 'docker-jenkins-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+        //             sh """
+        //                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+        //                docker push ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER}
+        //             """
+        //         }
+        //     }
+        // }
+
+        // stage ("Deploy to cluster dev-kt-k8s") {
+        //     steps {
+        //         withKubeConfig(credentialsId: 'kubeconfig-dev-kt-k8s') {
+        //             sh "kubectl apply -f k8s/namespace.yaml"
+        //             sh "kubectl apply -f k8s/mysql/"
+
+        //             sh """
+        //                 sed -i 's#docker.io/vsiraparapu/business-mgmt-app:[0-9]\\+#docker.io/vsiraparapu/business-mgmt-app:${BUILD_NUMBER}#' k8s/app/deployment.yaml
+        //                 kubectl apply -f k8s/app/
+        //             """
+        //         }
+        //     }
+        // }
     }
 }
