@@ -10,58 +10,58 @@
 
   tasks:
 
-    - name: Update apt cache (Debian/Ubuntu)
-      apt:
-        update_cache: yes
-      when: ansible_os_family == "Debian"
+    # - name: Update apt cache (Debian/Ubuntu)
+    #   apt:
+    #     update_cache: yes
+    #   when: ansible_os_family == "Debian"
 
-    - name: Install Java (required for Tomcat)
-      package:
-        name: openjdk-11-jre-headless
-        state: present
+    # - name: Install Java (required for Tomcat)
+    #   package:
+    #     name: openjdk-11-jre-headless
+    #     state: present
 
-    - name: Create tomcat group
-      group:
-        name: tomcat
+    # - name: Create tomcat group
+    #   group:
+    #     name: tomcat
 
-    - name: Create tomcat user
-      user:
-        name: tomcat
-        shell: /bin/false
-        group: tomcat
-        home: "{{ tomcat_install_dir }}"
+    # - name: Create tomcat user
+    #   user:
+    #     name: tomcat
+    #     shell: /bin/false
+    #     group: tomcat
+    #     home: "{{ tomcat_install_dir }}"
 
-    - name: Download Tomcat
-      get_url:
-        url: "https://downloads.apache.org/tomcat/tomcat-9/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
-        dest: /tmp/apache-tomcat.tar.gz
-    - name: Create install directory
-      file:
-        path: "{{ tomcat_install_dir }}"
-        state: directory
-        owner: tomcat
-        group: tomcat
+    # - name: Download Tomcat
+    #   get_url:
+    #     url: "https://downloads.apache.org/tomcat/tomcat-9/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
+    #     dest: /tmp/apache-tomcat.tar.gz
+    # - name: Create install directory
+    #   file:
+    #     path: "{{ tomcat_install_dir }}"
+    #     state: directory
+    #     owner: tomcat
+    #     group: tomcat
 
-    - name: Extract Tomcat
-      unarchive:
-        src: /tmp/apache-tomcat.tar.gz
-        dest: "{{ tomcat_install_dir }}"
-        remote_src: yes
-        creates: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}"
+    # - name: Extract Tomcat
+    #   unarchive:
+    #     src: /tmp/apache-tomcat.tar.gz
+    #     dest: "{{ tomcat_install_dir }}"
+    #     remote_src: yes
+    #     creates: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}"
 
-    - name: Symlink latest Tomcat
-      file:
-        src: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}"
-        dest: "{{ tomcat_install_dir }}/latest"
-        state: link
+    # - name: Symlink latest Tomcat
+    #   file:
+    #     src: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}"
+    #     dest: "{{ tomcat_install_dir }}/latest"
+    #     state: link
 
-    - name: Change ownership of Tomcat
-      file:
-        path: "{{ tomcat_install_dir }}"
-        state: directory
-        owner: tomcat
-        group: tomcat
-        recurse: yes
+    # - name: Change ownership of Tomcat
+    #   file:
+    #     path: "{{ tomcat_install_dir }}"
+    #     state: directory
+    #     owner: tomcat
+    #     group: tomcat
+    #     recurse: yes
 
     # - name: Create systemd service for Tomcat
     #   copy:
